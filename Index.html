@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Круг Казино 3D</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background: radial-gradient(circle at center, #111 40%, #000);
+    color: white;
+    font-family: Arial, sans-serif;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .wheel-container {
+    position: relative;
+    perspective: 1000px;
+  }
+
+  .wheel {
+    position: relative;
+    width: 320px;
+    height: 320px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 12px solid gold;
+    background: #222;
+    transition: transform 4s cubic-bezier(0.25, 1, 0.3, 1);
+    transform-style: preserve-3d;
+    box-shadow: 0 0 40px gold, inset 0 0 40px #ffec8b;
+  }
+
+  .neon-lights {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 380px;
+    height: 380px;
+    border-radius: 50%;
+    box-shadow: 0 0 30px red, 0 0 60px orange, 0 0 90px yellow;
+    animation: neonRun 2s infinite linear;
+    z-index: -1;
+  }
+
+  @keyframes neonRun {
+    0% { box-shadow: 0 0 30px red, 0 0 60px orange, 0 0 90px yellow; }
+    25% { box-shadow: 0 0 40px blue, 0 0 70px cyan, 0 0 100px white; }
+    50% { box-shadow: 0 0 30px lime, 0 0 60px green, 0 0 90px gold; }
+    75% { box-shadow: 0 0 40px magenta, 0 0 70px pink, 0 0 100px yellow; }
+    100% { box-shadow: 0 0 30px red, 0 0 60px orange, 0 0 90px yellow; }
+  }
+
+  .slice {
+    position: absolute;
+    width: 50%;
+    height: 100%;
+    transform-origin: 100% 50%;
+    background: crimson;
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 26px;
+    font-weight: bold;
+    text-transform: uppercase;
+    text-shadow: 1px 1px 3px black;
+  }
+
+  .slice:nth-child(2) {
+    transform: rotate(180deg);
+    background: navy;
+  }
+
+  .pointer {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -160%);
+    width: 0;
+    height: 0;
+    border-left: 18px solid transparent;
+    border-right: 18px solid transparent;
+    border-bottom: 40px solid yellow;
+    z-index: 10;
+    filter: drop-shadow(0 0 5px #fff);
+  }
+
+  .result {
+    margin-top: 25px;
+    font-size: 28px;
+    font-weight: bold;
+    text-shadow: 0 0 10px red;
+    color: #ff4040;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+  }
+
+  .jackpot {
+    position: absolute;
+    top: 20%;
+    font-size: 64px;
+    font-weight: bold;
+    color: gold;
+    text-shadow: 0 0 20px red, 0 0 40px yellow, 0 0 60px orange;
+    opacity: 0;
+    animation: jackpotAnim 2s ease forwards;
+  }
+
+  @keyframes jackpotAnim {
+    0% { opacity: 0; transform: scale(0.5) rotate(-10deg); }
+    50% { opacity: 1; transform: scale(1.2) rotate(10deg); }
+    100% { opacity: 1; transform: scale(1) rotate(0deg); }
+  }
+
+  button {
+    margin-top: 15px;
+    padding: 12px 25px;
+    background: linear-gradient(180deg, #ffec8b, gold);
+    border: none;
+    border-radius: 8px;
+    font-size: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 5px 15px rgba(255, 215, 0, 0.5);
+    transition: transform 0.2s;
+  }
+
+  button:hover {
+    transform: scale(1.05);
+  }
+
+  .confetti {
+    position: fixed;
+    width: 10px;
+    height: 10px;
+    background: red;
+    animation: fall 3s linear forwards;
+    opacity: 0.9;
+  }
+
+  @keyframes fall {
+    to {
+      transform: translateY(100vh) rotate(720deg);
+      opacity: 0;
+    }
+  }
+
+  .flash {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: white;
+    opacity: 0;
+    pointer-events: none;
+    animation: flashAnim 0.2s ease;
+  }
+
+  @keyframes flashAnim {
+    0% { opacity: 0; }
+    50% { opacity: 0.8; }
+    100% { opacity: 0; }
+  }
+</style>
+</head>
+<body>
+  <div class="wheel-container">
+    <div class="neon-lights"></div>
+    <div class="wheel" id="wheel">
+      <div class="slice">Трахаться</div>
+      <div class="slice">Спать</div>
+    </div>
+    <div class="pointer"></div>
+  </div>
+  <button onclick="spin()">Крутить</button>
+  <div class="result" id="result"></div>
+  <div class="jackpot" id="jackpot">JACKPOT!!!</div>
+
+  <audio id="spinSound" src="https://actions.google.com/sounds/v1/ambiences/spaceship_interior.ogg"></audio>
+  <audio id="winSound" src="https://actions.google.com/sounds/v1/cartoon/cartoon_boing.ogg"></audio>
+  <audio id="clapSound" src="https://actions.google.com/sounds/v1/human_voices/clapping.ogg"></audio>
+
+<script>
+function spin() {
+  const wheel = document.getElementById('wheel');
+  const result = document.getElementById('result');
+  const jackpot = document.getElementById('jackpot');
+  const spinSound = document.getElementById('spinSound');
+  const winSound = document.getElementById('winSound');
+  const clapSound = document.getElementById('clapSound');
+
+  result.style.opacity = 0; 
+  jackpot.style.opacity = 0;
+
+  spinSound.currentTime = 0;
+  spinSound.play();
+
+  const spins = 5;
+  const targetDeg = 360 * spins + 0; 
+
+  wheel.style.transform = `rotateY(20deg) rotate(${targetDeg}deg)`; 
+
+  setTimeout(() => {
+    winSound.play();
+    clapSound.play();
+    result.textContent = "ВЫПАЛО: ТРАХАТЬСЯ!";
+    result.style.opacity = 1;
+    jackpot.style.opacity = 1;
+    launchConfetti();
+    flashScreen();
+  }, 4200);
+}
+
+function launchConfetti() {
+  for (let i = 0; i < 50; i++) {
+    const confetti = document.createElement('div');
+    confetti.className = 'confetti';
+    confetti.style.left = Math.random() * 100 + 'vw';
+    confetti.style.top = '-10px';
+    confetti.style.background = `hsl(${Math.random() * 360}, 100%, 50%)`;
+    confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
+    document.body.appendChild(confetti);
+    setTimeout(() => confetti.remove(), 3000);
+  }
+}
+
+function flashScreen() {
+  for (let i = 0; i < 3; i++) {
+    setTimeout(() => {
+      const flash = document.createElement('div');
+      flash.className = 'flash';
+      document.body.appendChild(flash);
+      setTimeout(() => flash.remove(), 300);
+    }, i * 300);
+  }
+}
+</script>
+</body>
+</html>
